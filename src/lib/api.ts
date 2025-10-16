@@ -31,7 +31,7 @@ export async function registerApi(payload: {
   last_name?: string;
   phone?: string;
 }) {
-  const { data } = await api.post('/users/users/', payload);
+  const { data } = await api.post('/users/register/', payload);
   return data;
 }
 
