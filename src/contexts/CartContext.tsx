@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { CartItem, Accessory } from '@/lib/mockData';
 import { addCartItemApi, clearCartApi, getMyCartApi, removeCartItemApi, updateCartItemApi } from '@/lib/api';
+import { useAuth } from './AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface CartState {
   items: CartItem[];
@@ -114,7 +116,7 @@ const calculateTotal = (items: CartItem[]): number => {
 
 interface CartContextType {
   state: CartState;
-  addItem: (accessory: Accessory) => Promise<void>;
+  addItem: (accessory: Accessory, onLoginRequired?: () => void) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -145,6 +147,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     total: 0,
     cartId: null,
   });
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const mapBackendCartToState = (backendCart: any): { cartId: number | string; items: CartItem[] } => {
     const items: CartItem[] = (backendCart.cart_accessories || []).map((ci: any) => ({
@@ -152,6 +156,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       name: ci.accessory_detail?.name || 'Accessory',
       category: 'Toys',
       price: Number(ci.accessory_detail?.price || 0),
+      currency: ci.accessory_detail?.currency || 'INR',
       image: ci.accessory_detail?.image || '',
       description: ci.accessory_detail?.description || '',
       rating: 4.5,
@@ -163,20 +168,52 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Initialize from backend cart if authenticated
   useEffect(() => {
-    const token = localStorage.getItem('pawheart_token');
-    if (!token) return;
+    if (!isAuthenticated) {
+      // Clear cart if user is not authenticated
+      dispatch({ type: 'CLEAR_CART' });
+      return;
+    }
+
     (async () => {
       try {
         const cart = await getMyCartApi();
         const mapped = mapBackendCartToState(cart);
         dispatch({ type: 'SET_FROM_BACKEND', payload: mapped });
-      } catch {
-        // ignore
+      } catch (error) {
+        console.error('Failed to load cart:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your cart. Please try again.",
+          variant: "destructive",
+        });
       }
     })();
+  }, [isAuthenticated, toast]);
+
+  // Listen for logout events to clear cart
+  useEffect(() => {
+    const handleLogout = () => {
+      dispatch({ type: 'CLEAR_CART' });
+    };
+
+    window.addEventListener('userLoggedOut', handleLogout);
+    return () => window.removeEventListener('userLoggedOut', handleLogout);
   }, []);
 
-  const addItem = async (accessory: Accessory) => {
+  const addItem = async (accessory: Accessory, onLoginRequired?: () => void) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please login to add items to your cart.",
+        variant: "destructive",
+      });
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
+
     try {
       // Ensure cart exists
       let cartId = state.cartId;
@@ -189,13 +226,31 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const resp = await addCartItemApi(cartId!, { accessory_id: accessory.id, quantity: 1 });
       const mapped = mapBackendCartToState(resp.cart);
       dispatch({ type: 'SET_FROM_BACKEND', payload: mapped });
-    } catch {
-      // fall back to local add
-      dispatch({ type: 'ADD_ITEM', payload: accessory });
+      
+      toast({
+        title: "Added to Cart!",
+        description: `${accessory.name} has been added to your cart.`,
+      });
+    } catch (error) {
+      console.error('Failed to add item to cart:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const removeItem = async (id: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please login to manage your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (state.cartId) {
         // Need to find item_id from backend; not tracked in UI, so refetch cart
@@ -205,16 +260,34 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           const resp = await removeCartItemApi(state.cartId, { item_id: item.id });
           const mapped = mapBackendCartToState(resp.cart);
           dispatch({ type: 'SET_FROM_BACKEND', payload: mapped });
+          
+          toast({
+            title: "Item Removed",
+            description: "Item has been removed from your cart.",
+          });
           return;
         }
       }
-    } catch {
-      // noop
+    } catch (error) {
+      console.error('Failed to remove item from cart:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item from cart. Please try again.",
+        variant: "destructive",
+      });
     }
-    dispatch({ type: 'REMOVE_ITEM', payload: id });
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please login to manage your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (state.cartId) {
         const cart = await getMyCartApi();
@@ -226,21 +299,44 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           return;
         }
       }
-    } catch {
-      // noop
+    } catch (error) {
+      console.error('Failed to update cart item quantity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update item quantity. Please try again.",
+        variant: "destructive",
+      });
     }
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
   };
 
   const clearCart = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please login to manage your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (state.cartId) {
         await clearCartApi(state.cartId);
       }
-    } catch {
-      // ignore
+      dispatch({ type: 'CLEAR_CART' });
+      
+      toast({
+        title: "Cart Cleared",
+        description: "All items have been removed from your cart.",
+      });
+    } catch (error) {
+      console.error('Failed to clear cart:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear cart. Please try again.",
+        variant: "destructive",
+      });
     }
-    dispatch({ type: 'CLEAR_CART' });
   };
 
   const toggleCart = () => {

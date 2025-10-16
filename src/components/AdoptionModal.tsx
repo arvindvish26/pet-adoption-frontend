@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Heart, Home, Users, MapPin, Calendar, DollarSign } from 'lucide-react';
 import { adoptPetApi } from '@/lib/api';
+import { formatPrice } from '@/lib/currency';
 
 interface AdoptionModalProps {
   isOpen: boolean;
@@ -71,6 +72,16 @@ const AdoptionModal: React.FC<AdoptionModalProps> = ({
       return;
     }
 
+    // Validate required fields
+    if (!formData.experience.trim() || !formData.livingSituation.trim() || !formData.reasonForAdoption.trim()) {
+      toast({
+        title: "Missing required information",
+        description: "Please fill in all required fields before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.agreeToTerms || !formData.agreeToVisit) {
       toast({
         title: "Please agree to terms",
@@ -105,10 +116,12 @@ const AdoptionModal: React.FC<AdoptionModalProps> = ({
       });
       onClose();
       
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Adoption error:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || "Please try again or contact support.";
       toast({
         title: "Adoption failed",
-        description: "Please try again or contact support.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -141,7 +154,7 @@ const AdoptionModal: React.FC<AdoptionModalProps> = ({
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-lg font-bold">{pet.name}</h3>
                   <Badge className="bg-primary text-primary-foreground">
-                    ${pet.adoptionFee}
+                    {formatPrice(pet.adoptionFee, pet.currency)}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">

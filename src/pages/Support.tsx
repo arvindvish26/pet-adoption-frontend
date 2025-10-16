@@ -11,7 +11,7 @@ const Support = () => {
       icon: <Phone className="w-6 h-6" />,
       title: "Phone Support",
       description: "Speak directly with our adoption specialists",
-      contact: "(555) PAW-LOVE",
+      contact: "(+91) 98765 43210",
       availability: "Mon-Fri 10AM-6PM",
       color: "primary"
     },
@@ -19,18 +19,10 @@ const Support = () => {
       icon: <Mail className="w-6 h-6" />,
       title: "Email Support", 
       description: "Get detailed answers to your questions",
-      contact: "support@pawparadise.com",
+      contact: "support@petmate.com",
       availability: "24-48 hour response",
-      color: "secondary"
+      color: "primary"
     },
-    {
-      icon: <MessageCircle className="w-6 h-6" />,
-      title: "Live Chat",
-      description: "Instant help during business hours",
-      contact: "Available on website",
-      availability: "Mon-Sat 9AM-7PM",
-      color: "accent"
-    }
   ];
 
   const faqs = [
@@ -72,7 +64,7 @@ const Support = () => {
       category: "Volunteering & Donations",
       questions: [
         {
-          question: "How can I volunteer at Paw Paradise?",
+          question: "How can I volunteer at PetMate?",
           answer: "We offer various volunteer opportunities including pet care, events, fostering, and administrative support. Visit our website to fill out a volunteer application and attend orientation."
         },
         {
@@ -103,7 +95,7 @@ const Support = () => {
 
           <div className="mb-12">
             <h2 className="text-3xl font-bold text-center text-foreground mb-8">Get Help Now</h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {supportOptions.map((option, index) => (
                 <Card key={index} className="text-center hover:shadow-lg transition-shadow">
                   <CardHeader>
@@ -155,7 +147,7 @@ const Support = () => {
           <div className="grid md:grid-cols-2 gap-8">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-secondary">
+                <CardTitle className="flex items-center gap-2 text-primary">
                   <Heart className="w-5 h-5" />
                   Volunteer Support
                 </CardTitle>
@@ -165,7 +157,7 @@ const Support = () => {
                   Questions about volunteering, fostering, or helping our mission? Our volunteer coordinator 
                   is here to help match you with the perfect opportunity.
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full text-primary bg-primary-foreground hover:text-primary-foreground hover:bg-primary">
                   Contact Volunteer Team
                 </Button>
               </CardContent>
@@ -173,7 +165,7 @@ const Support = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-accent">
+                <CardTitle className="flex items-center gap-2 text-primary">
                   <DollarSign className="w-5 h-5" />
                   Donation Support
                 </CardTitle>
@@ -183,7 +175,7 @@ const Support = () => {
                   Want to make a donation or sponsor a pet? Our fundraising team can help you choose 
                   the best way to support our animals in need.
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full text-primary bg-primary-foreground hover:text-primary-foreground hover:bg-primary">
                   Donation Information
                 </Button>
               </CardContent>

@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +130,7 @@ const PetCareTips = () => {
                         <ul className="space-y-2">
                           {section.tips.map((tip, tipIndex) => (
                             <li key={tipIndex} className="flex items-start gap-3">
-                              <Badge variant="secondary" className="mt-1 h-2 w-2 rounded-full p-0" />
+                              <Badge variant="default" className="mt-1 h-2 w-2 rounded-full p-0" />
                               <span className="text-muted-foreground">{tip}</span>
                             </li>
                           ))}
@@ -144,14 +145,14 @@ const PetCareTips = () => {
             <TabsContent value="cats">
               <div className="space-y-6">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-secondary mb-2">Cat Care Essentials</h2>
+                  <h2 className="text-3xl font-bold text-primary mb-2">Cat Care Essentials</h2>
                   <p className="text-muted-foreground">Creating the perfect environment for your feline friend</p>
                 </div>
                 <div className="grid gap-6">
                   {catTips.map((section, index) => (
                     <Card key={index} className="border-secondary/20">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-secondary">
+                        <CardTitle className="flex items-center gap-3 text-primary">
                           {section.icon}
                           {section.title}
                         </CardTitle>
@@ -160,7 +161,7 @@ const PetCareTips = () => {
                         <ul className="space-y-2">
                           {section.tips.map((tip, tipIndex) => (
                             <li key={tipIndex} className="flex items-start gap-3">
-                              <Badge variant="secondary" className="mt-1 h-2 w-2 rounded-full p-0" />
+                              <Badge variant="default" className="mt-1 h-2 w-2 rounded-full p-0" />
                               <span className="text-muted-foreground">{tip}</span>
                             </li>
                           ))}
@@ -175,7 +176,7 @@ const PetCareTips = () => {
             <TabsContent value="general">
               <div className="space-y-6">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-accent mb-2">General Pet Care</h2>
+                  <h2 className="text-3xl font-bold text-primary mb-2">General Pet Care</h2>
                   <p className="text-muted-foreground">Universal principles for all pet parents</p>
                 </div>
                 <div className="grid gap-6">
@@ -183,7 +184,7 @@ const PetCareTips = () => {
                     <Card key={index} className="border-accent/20">
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
-                          <div className="bg-accent/10 p-3 rounded-full text-accent">
+                          <div className="bg-accent/10 p-3 rounded-full text-primary">
                             {tip.icon}
                           </div>
                           <div>
@@ -213,6 +214,7 @@ const PetCareTips = () => {
           </Tabs>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

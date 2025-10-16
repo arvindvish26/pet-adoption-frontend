@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { createContactApi } from "@/lib/api";
 
 const Contact = () => {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,13 +22,51 @@ const Contact = () => {
     message: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Message Sent!",
-      description: "We'll get back to you within 24 hours.",
-    });
-    setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    
+    // Validate required fields
+    if (!formData.subject) {
+      toast({
+        title: "Please select a subject",
+        description: "Please choose a subject for your message.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createContactApi({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        subject: formData.subject,
+        message: formData.message
+      });
+
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for your message! We'll get back to you within 24 hours.",
+      });
+      
+      // Reset form
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (error: any) {
+      console.error('Contact form error:', error);
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.detail || 
+                          "Failed to send message. Please try again.";
+      
+      toast({
+        title: "Error sending message",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -117,8 +158,8 @@ const Contact = () => {
                       />
                     </div>
 
-                    <Button type="submit" size="lg" className="w-full">
-                      Send Message
+                    <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? "Sending..." : "Send Message"}
                     </Button>
                   </form>
                 </CardContent>
@@ -128,32 +169,32 @@ const Contact = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-secondary">Visit Our Facility</CardTitle>
+                  <CardTitle className="text-primary">Visit Our Facility</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-secondary mt-1" />
+                    <MapPin className="w-5 h-5 text-primary mt-1" />
                     <div>
-                      <div className="font-medium">Paw Paradise Adoption Center</div>
+                      <div className="font-medium">PetMate Adoption Center</div>
                       <div className="text-muted-foreground">
-                        123 Pet Lover's Lane<br />
-                        Animalville, ST 12345
+                        27A, Carter Road, Bandra West<br />
+                        Mumbai, Maharashtra – 400050
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5 text-secondary" />
+                    <Phone className="w-5 h-5 text-primary" />
                     <div>
-                      <div className="font-medium">(555) PAW-LOVE</div>
-                      <div className="text-sm text-muted-foreground">(555) 729-5683</div>
+                      <div className="font-medium">(+91) PetMate</div>
+                      <div className="text-sm text-muted-foreground">(+91) 9876543210</div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-secondary" />
+                    <Mail className="w-5 h-5 text-primary" />
                     <div>
-                      <div className="font-medium">info@pawparadise.com</div>
+                      <div className="font-medium">info@petmate.com</div>
                       <div className="text-sm text-muted-foreground">We reply within 24 hours</div>
                     </div>
                   </div>
@@ -162,7 +203,7 @@ const Contact = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-accent">
+                  <CardTitle className="flex items-center gap-2 text-primary">
                     <Clock className="w-5 h-5" />
                     Hours of Operation
                   </CardTitle>
@@ -181,9 +222,9 @@ const Contact = () => {
                       <span className="font-medium">Sunday</span>
                       <span className="text-muted-foreground">12:00 PM - 4:00 PM</span>
                     </div>
-                    <div className="mt-4 p-3 bg-secondary/10 rounded">
+                    <div className="mt-4 p-3 bg-primary/10 rounded">
                       <p className="text-sm text-muted-foreground">
-                        <strong>Note:</strong> Adoption appointments are available outside regular hours. 
+                        <strong>Note:</strong> Adoption appointments are available outside regular hours.
                         Please call to schedule.
                       </p>
                     </div>
@@ -197,21 +238,23 @@ const Contact = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-3">
-                    For pet emergencies outside our hours, please contact:
+                    For pet emergencies or after-hour medical care, please contact:
                   </p>
-                  <div className="space-y-2">
-                    <div className="font-medium">24/7 Emergency Vet Clinic</div>
-                    <div className="text-muted-foreground">(555) 911-PETS</div>
+                  <div className="mt-4 space-y-2">
+                    <div className="font-medium">Animal Helpline (Government of India)</div>
+                    <div className="text-muted-foreground">1962</div>
                     <div className="text-sm text-muted-foreground">
-                      456 Emergency Ave, Animalville, ST 12345
+                      Available 24×7 for animal rescue and welfare assistance
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
             </div>
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

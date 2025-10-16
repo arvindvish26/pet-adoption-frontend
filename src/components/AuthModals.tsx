@@ -36,16 +36,17 @@ const AuthModals: React.FC<AuthModalsProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const [loginData, setLoginData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
 
   const [registerData, setRegisterData] = useState({
+    username: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: '',
+    password_confirm: '',
+    first_name: '',
+    last_name: '',
     phone: '',
     address: '',
     city: '',
@@ -57,35 +58,36 @@ const AuthModals: React.FC<AuthModalsProps> = ({
     setIsLoading(true);
 
     try {
-      const success = await login(loginData.email, loginData.password);
-      if (success) {
+      const result = await login(loginData.username, loginData.password);
+      if (result.success) {
         toast({
           title: "Welcome back!",
           description: "You've successfully logged in.",
         });
         onLoginClose();
-        setLoginData({ email: '', password: '' });
+        setLoginData({ username: '', password: '' });
       } else {
         toast({
-          title: "Login failed",
-          description: "Please check your credentials and try again.",
+          title: "Login Failed",
+          description: result.error || "Invalid credentials. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Login failed",
-        description: "An error occurred. Please try again.",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (registerData.password !== registerData.confirmPassword) {
+
+    if (registerData.password !== registerData.password_confirm) {
       toast({
         title: "Passwords don't match",
         description: "Please make sure your passwords match.",
@@ -106,19 +108,20 @@ const AuthModals: React.FC<AuthModalsProps> = ({
     setIsLoading(true);
 
     try {
-      const success = await register(registerData);
-      if (success) {
+      const result = await register(registerData);
+      if (result.success) {
         toast({
           title: "Account created!",
-          description: "Welcome to PawHeart! You've been automatically logged in.",
+          description: "Welcome to PetMate! You've been automatically logged in.",
         });
         onRegisterClose();
         setRegisterData({
+          username: '',
           email: '',
           password: '',
-          confirmPassword: '',
-          firstName: '',
-          lastName: '',
+          password_confirm: '',
+          first_name: '',
+          last_name: '',
           phone: '',
           address: '',
           city: '',
@@ -126,19 +129,20 @@ const AuthModals: React.FC<AuthModalsProps> = ({
         });
       } else {
         toast({
-          title: "Registration failed",
-          description: "This email is already registered. Please try logging in instead.",
+          title: "Registration Failed",
+          description: result.error || "Registration failed. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Registration failed",
-        description: "An error occurred. Please try again.",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -149,22 +153,22 @@ const AuthModals: React.FC<AuthModalsProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-center">
               <Heart className="h-5 w-5 text-primary" />
-              Welcome Back to PawHeart
+              Welcome Back to PetMate
             </DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="login-email">Email</Label>
+              <Label htmlFor="login-username">Username or Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="Enter your email"
+                  id="login-username"
+                  type="text"
+                  placeholder="Enter your username or email"
                   className="pl-10"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                  value={loginData.username}
+                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
                   required
                 />
               </div>
@@ -201,12 +205,6 @@ const AuthModals: React.FC<AuthModalsProps> = ({
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
 
-            <div className="text-center text-sm text-muted-foreground">
-              <strong>Demo credentials:</strong><br />
-              Email: demo@pawheart.com<br />
-              Password: password123
-            </div>
-
             <Separator />
 
             <div className="text-center">
@@ -231,10 +229,10 @@ const AuthModals: React.FC<AuthModalsProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-center">
               <Heart className="h-5 w-5 text-primary" />
-              Join the PawHeart Family
+              Join the PetMate Family
             </DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -245,8 +243,8 @@ const AuthModals: React.FC<AuthModalsProps> = ({
                     id="register-firstName"
                     placeholder="First name"
                     className="pl-10"
-                    value={registerData.firstName}
-                    onChange={(e) => setRegisterData({ ...registerData, firstName: e.target.value })}
+                    value={registerData.first_name}
+                    onChange={(e) => setRegisterData({ ...registerData, first_name: e.target.value })}
                     required
                   />
                 </div>
@@ -256,8 +254,8 @@ const AuthModals: React.FC<AuthModalsProps> = ({
                 <Input
                   id="register-lastName"
                   placeholder="Last name"
-                  value={registerData.lastName}
-                  onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })}
+                  value={registerData.last_name}
+                  onChange={(e) => setRegisterData({ ...registerData, last_name: e.target.value })}
                   required
                 />
               </div>
@@ -273,20 +271,20 @@ const AuthModals: React.FC<AuthModalsProps> = ({
                   placeholder="Enter your email"
                   className="pl-10"
                   value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value, username: e.target.value.toLowerCase() })}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="register-phone">Phone Number (Optional)</Label>
+              <Label htmlFor="register-phone">Phone Number</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="register-phone"
                   type="tel"
-                  placeholder="(555) 123-4567"
+                  placeholder="(+91) 9876543210"
                   className="pl-10"
                   value={registerData.phone}
                   onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
@@ -368,8 +366,8 @@ const AuthModals: React.FC<AuthModalsProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Confirm your password"
                   className="pl-10"
-                  value={registerData.confirmPassword}
-                  onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                  value={registerData.password_confirm}
+                  onChange={(e) => setRegisterData({ ...registerData, password_confirm: e.target.value })}
                   required
                 />
               </div>

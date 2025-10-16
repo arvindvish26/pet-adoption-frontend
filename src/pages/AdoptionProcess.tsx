@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Heart, FileText, Home } from "lucide-react";
@@ -98,21 +99,21 @@ const AdoptionProcess = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-secondary">Adoption Fees</CardTitle>
+                <CardTitle className="text-primary">Adoption Fees</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-3 bg-secondary/10 rounded">
                     <span className="font-medium">Dogs</span>
-                    <span className="text-lg font-bold text-secondary">$150 - $300</span>
+                    <span className="text-lg font-bold text-primary">₹6,000 - ₹12,500</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-secondary/10 rounded">
                     <span className="font-medium">Cats</span>
-                    <span className="text-lg font-bold text-secondary">$75 - $150</span>
+                    <span className="text-lg font-bold text-primary">₹3,000 - ₹6,500</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-secondary/10 rounded">
                     <span className="font-medium">Small Animals</span>
-                    <span className="text-lg font-bold text-secondary">$25 - $75</span>
+                    <span className="text-lg font-bold text-primary">₹1,000 - ₹3,000</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-4">
                     *Fees include spay/neuter, vaccinations, microchipping, and basic health check
@@ -123,6 +124,7 @@ const AdoptionProcess = () => {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

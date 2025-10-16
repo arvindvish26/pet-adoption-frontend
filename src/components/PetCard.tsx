@@ -6,6 +6,7 @@ import { Pet } from '@/lib/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import AdoptionModal from '@/components/AdoptionModal';
 import { Heart, MapPin, Calendar, DollarSign, CheckCircle } from 'lucide-react';
+import { formatPrice } from '@/lib/currency';
 
 interface PetCardProps {
   pet: Pet;
@@ -40,7 +41,7 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onLoginRequired }) => {
           </div>
           <div className="absolute top-2 left-2">
             <Badge className="bg-primary text-primary-foreground">
-              ${pet.adoptionFee}
+              {formatPrice(pet.adoptionFee, pet.currency)}
             </Badge>
           </div>
         </div>

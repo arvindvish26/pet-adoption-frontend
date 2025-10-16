@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,7 +8,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config: any) => {
-  const token = localStorage.getItem('pawheart_token');
+  const token = localStorage.getItem('PetMate_token');
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
@@ -23,7 +23,7 @@ export async function loginApi(username: string, password: string) {
 }
 
 export async function registerApi(payload: {
-  username: string;
+  username?: string;
   email: string;
   password: string;
   password_confirm: string;
@@ -44,6 +44,12 @@ export async function fetchPetsApi(params?: Record<string, string | number | boo
 // Accessories
 export async function fetchAccessoriesApi(params?: Record<string, string | number | boolean>) {
   const { data } = await api.get('/accessories/accessories/', { params });
+  return data;
+}
+
+// Categories
+export async function fetchCategoriesApi() {
+  const { data } = await api.get('/accessories/categories/');
   return data;
 }
 
@@ -124,6 +130,18 @@ export async function createPaymentApi(payload: { order: number | string; paymen
 
 export async function processPaymentApi(id: number | string) {
   const { data } = await api.post(`/payments/payments/${id}/process_payment/`);
+  return data;
+}
+
+// Contacts
+export async function createContactApi(payload: {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}) {
+  const { data } = await api.post('/contacts/contacts/', payload);
   return data;
 }
 

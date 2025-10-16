@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/CartContext';
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard } from 'lucide-react';
+import { formatPrice } from '@/lib/currency';
 
 interface CartDrawerProps {
   children: React.ReactNode;
@@ -59,7 +60,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ children }) => {
                       {item.name}
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      ${item.price.toFixed(2)} each
+                      {formatPrice(item.price, item.currency)} each
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Button
@@ -93,7 +94,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ children }) => {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      {formatPrice(item.price * item.quantity, item.currency)}
                     </p>
                   </div>
                 </div>
@@ -107,7 +108,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ children }) => {
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-semibold">Total:</span>
               <span className="text-xl font-bold text-primary">
-                ${state.total.toFixed(2)}
+                {formatPrice(state.total, 'INR')}
               </span>
             </div>
             

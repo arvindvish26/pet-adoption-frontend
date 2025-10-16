@@ -8,7 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createAddressApi, createOrderApi, createPaymentApi, listAddressesApi, processPaymentApi } from '@/lib/api';
+import { createAddressApi, createOrderApi, createPaymentApi, listAddressesApi, processPaymentApi, getMyCartApi } from '@/lib/api';
+import { formatPrice } from '@/lib/currency';
+import Footer from '@/components/Footer';
+import Header from '@/components/Header';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -77,12 +80,14 @@ const Checkout = () => {
     setIsProcessing(true);
     try {
       const { shipping, billing } = await ensureAddress();
+      // Get the user's current cart ID
+      const cart = await getMyCartApi();
       // Create order from backend cart
       const order = await createOrderApi({
-        cart: 'me', // not used, backend derives from user via our endpoint; fallback below if needed
+        cart: cart.id, // Use the actual cart ID
         shipping_address: shipping,
         billing_address: billing,
-      } as any);
+      });
       // Create payment and process
       const payment = await createPaymentApi({ order: order.id, payment_method: 'Card' });
       await processPaymentApi(payment.id);
@@ -113,9 +118,11 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-warm p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="max-w-6xl mx-auto pt-5 pb-">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-foreground">Checkout</h1>
           <Button
             variant="outline"
             onClick={() => navigate('/')}
@@ -124,7 +131,6 @@ const Checkout = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Shopping
           </Button>
-          <h1 className="text-3xl font-bold text-foreground">Checkout</h1>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
@@ -147,14 +153,14 @@ const Checkout = () => {
                       </p>
                     </div>
                     <span className="font-semibold">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      {formatPrice(item.price * item.quantity, item.currency)}
                     </span>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">${state.total.toFixed(2)}</span>
+                  <span className="text-primary">{formatPrice(state.total, 'INR')}</span>
                 </div>
               </div>
             </CardContent>
@@ -283,13 +289,14 @@ const Checkout = () => {
                   className="w-full"
                   disabled={isProcessing}
                 >
-                  {isProcessing ? 'Processing...' : `Pay $${state.total.toFixed(2)}`}
+                  {isProcessing ? 'Processing...' : `Pay ${formatPrice(state.total, 'INR')}`}
                 </Button>
               </form>
             </CardContent>
           </Card>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

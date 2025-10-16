@@ -4,31 +4,34 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accessory } from '@/lib/mockData';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Star, ShoppingCart, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatPrice } from '@/lib/currency';
 
 interface AccessoryCardProps {
   accessory: Accessory;
+  onLoginRequired?: () => void;
 }
 
-const AccessoryCard: React.FC<AccessoryCardProps> = ({ accessory }) => {
+const AccessoryCard: React.FC<AccessoryCardProps> = ({ accessory, onLoginRequired }) => {
   const { addItem, openCart } = useCart();
   const { toast } = useToast();
 
   const handleAddToCart = () => {
     if (!accessory.inStock) return;
     
-    addItem(accessory);
-    toast({
-      title: "Added to Cart!",
-      description: `${accessory.name} has been added to your cart.`,
-    });
+    addItem(accessory, onLoginRequired);
   };
 
   const handleBuyNow = () => {
     if (!accessory.inStock) return;
     
-    addItem(accessory);
+    addItem(accessory, () => {
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+    });
     openCart();
   };
 
@@ -88,7 +91,7 @@ const AccessoryCard: React.FC<AccessoryCardProps> = ({ accessory }) => {
 
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-primary">
-            ${accessory.price.toFixed(2)}
+            {formatPrice(accessory.price, accessory.currency)}
           </span>
           {accessory.inStock ? (
             <Badge variant="outline" className="text-xs bg-success/10 text-success">

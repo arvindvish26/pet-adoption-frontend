@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import PetCard from '@/components/PetCard';
 import AccessoryCard from '@/components/AccessoryCard';
@@ -12,38 +13,80 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Pet, Accessory } from '@/lib/mockData';
-import { fetchPetsApi, fetchAccessoriesApi } from '@/lib/api';
+import { fetchPetsApi, fetchAccessoriesApi, fetchCategoriesApi } from '@/lib/api';
+import { getPetImage, getAccessoryImage } from '@/lib/images';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Heart, Search, Filter, Star, Users, Award, CheckCircle } from 'lucide-react';
 import heroImage from '@/assets/hero-pets.jpg';
 
 const Index = () => {
-  const [petFilter, setPetFilter] = useState('all');
-  const [accessoryFilter, setAccessoryFilter] = useState('all');
+  // Pet filters
+  const [petCategoryFilter, setPetCategoryFilter] = useState('all');
+  const [petBreedFilter, setPetBreedFilter] = useState('all');
+  const [petVaccinatedFilter, setPetVaccinatedFilter] = useState('all');
   const [petSearchQuery, setPetSearchQuery] = useState('');
+  
+  // Accessory filters
+  const [accessoryCategoryFilter, setAccessoryCategoryFilter] = useState('all');
   const [accessorySearchQuery, setAccessorySearchQuery] = useState('');
+  
+  // UI states
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
   const { isAuthenticated } = useAuth();
 
-  const { data: pets = [], isLoading: petsLoading } = useQuery({
-    queryKey: ['pets'],
+  // Debounced search queries (300ms delay)
+  const debouncedPetSearchQuery = useDebounce(petSearchQuery, 300);
+  const debouncedAccessorySearchQuery = useDebounce(accessorySearchQuery, 300);
+
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
     queryFn: async () => {
-      const resp = await fetchPetsApi({ status: 'Available' });
-      // DRF returns paginated by default if configured; handle both cases
+      const resp = await fetchCategoriesApi();
       const results = Array.isArray(resp) ? resp : resp.results ?? [];
-      // Map to UI Pet type if needed
+      return results;
+    },
+  });
+
+  // Fetch pets with filters
+  const { data: pets = [], isLoading: petsLoading } = useQuery({
+    queryKey: ['pets', petCategoryFilter, petBreedFilter, petVaccinatedFilter, debouncedPetSearchQuery],
+    queryFn: async () => {
+      const params: Record<string, any> = { status: 'Available' };
+      
+      // Apply filters
+      if (petCategoryFilter !== 'all') {
+        params.category = petCategoryFilter;
+      }
+      if (petBreedFilter !== 'all') {
+        params.breed = petBreedFilter;
+      }
+      if (petVaccinatedFilter !== 'all') {
+        params.vaccinated = petVaccinatedFilter === 'true';
+      }
+      if (debouncedPetSearchQuery.trim()) {
+        params.search = debouncedPetSearchQuery.trim();
+      }
+
+      const resp = await fetchPetsApi(params);
+      const results = Array.isArray(resp) ? resp : resp.results ?? [];
+      
+      // Map to UI Pet type
       const mapped: Pet[] = results.map((p: any) => ({
         id: String(p.id),
         name: p.name,
         breed: p.breed,
         age: String(p.age) + ' years',
-        size: 'Medium',
-        gender: 'Male',
-        description: `${p.name} the ${p.breed} in ${p.city}.`,
-        image: p.image || 'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=400&h=300&fit=crop',
-        adoptionFee: 0,
+        size: 'Medium' as const,
+        gender: 'Male' as const,
+        description: `${p.name} the ${p.breed} in ${p.city || 'Unknown city'}.`,
+        image: p.image || getPetImage(p.category_name, p.id),
+        adoptionFee: Number(p.adoption_fee),
+        currency: p.currency,
+        formattedAdoptionFee: p.formatted_adoption_fee,
         vaccinated: !!p.vaccinated,
         neutered: true,
         goodWithKids: true,
@@ -53,17 +96,30 @@ const Index = () => {
     },
   });
 
+  // Fetch accessories with filters
   const { data: accessories = [], isLoading: accessoriesLoading } = useQuery({
-    queryKey: ['accessories'],
+    queryKey: ['accessories', accessoryCategoryFilter, debouncedAccessorySearchQuery],
     queryFn: async () => {
-      const resp = await fetchAccessoriesApi({ in_stock: 'true' });
+      const params: Record<string, any> = {};
+      
+      // Apply filters
+      if (accessoryCategoryFilter !== 'all') {
+        params.category = accessoryCategoryFilter;
+      }
+      if (debouncedAccessorySearchQuery.trim()) {
+        params.search = debouncedAccessorySearchQuery.trim();
+      }
+
+      const resp = await fetchAccessoriesApi(params);
       const results = Array.isArray(resp) ? resp : resp.results ?? [];
+      
       const mapped: Accessory[] = results.map((a: any) => ({
         id: String(a.id),
         name: a.name,
-        category: 'Toys',
+        category: a.category_name as any,
         price: Number(a.price),
-        image: a.image || 'https://images.unsplash.com/photo-1605568427561-40dd23c2acea?w=400&h=300&fit=crop',
+        currency: a.currency,
+        image: a.image || getAccessoryImage(a.category_name, a.id),
         description: a.description || '',
         rating: 4.5,
         inStock: (a.stock ?? 0) > 0,
@@ -72,19 +128,9 @@ const Index = () => {
     },
   });
 
-  const filteredPets = pets.filter((pet: Pet) => {
-    const matchesSearch = pet.name.toLowerCase().includes(petSearchQuery.toLowerCase()) ||
-                         pet.breed.toLowerCase().includes(petSearchQuery.toLowerCase());
-    const matchesFilter = petFilter === 'all' || pet.size.toLowerCase() === petFilter;
-    return matchesSearch && matchesFilter;
-  });
-
-  const filteredAccessories = accessories.filter((accessory: Accessory) => {
-    const matchesSearch = accessory.name.toLowerCase().includes(accessorySearchQuery.toLowerCase()) ||
-                         accessory.description.toLowerCase().includes(accessorySearchQuery.toLowerCase());
-    const matchesFilter = accessoryFilter === 'all' || accessory.category === accessoryFilter;
-    return matchesSearch && matchesFilter;
-  });
+  // Filtering is now handled by the backend, so we use the data directly
+  const filteredPets = pets;
+  const filteredAccessories = accessories;
 
   const handleSwitchToRegister = () => {
     setIsLoginOpen(false);
@@ -97,7 +143,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-warm">
+    <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
@@ -110,7 +156,7 @@ const Index = () => {
         <div className="relative max-w-6xl mx-auto text-center text-primary-foreground">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
             Find Your Perfect
-            <span className="block text-primary-glow">Furry Companion</span>
+            <span className="block text-primary">Furry Companion</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-primary-foreground/90 max-w-3xl mx-auto">
             Give a loving home to pets in need and discover everything you need for their care
@@ -126,7 +172,7 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary font-semibold"
+              className="border-primary-foreground text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary font-semibold"
             >
               Learn About Pet Care
             </Button>
@@ -164,17 +210,30 @@ const Index = () => {
                 className="pl-10 bg-background"
               />
             </div>
-            <div className="flex gap-2">
-              <Select value={petFilter} onValueChange={setPetFilter}>
+            <div className="flex gap-2 flex-wrap">
+              <Select value={petCategoryFilter} onValueChange={setPetCategoryFilter}>
                 <SelectTrigger className="w-40 bg-background">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Pet Size" />
+                  <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Sizes</SelectItem>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.filter(cat => ['Dogs', 'Cats', 'Birds', 'Rabbits', 'Fish', 'Hamsters', 'Reptiles'].includes(cat.name)).map(category => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={petVaccinatedFilter} onValueChange={setPetVaccinatedFilter}>
+                <SelectTrigger className="w-40 bg-background">
+                  <SelectValue placeholder="Vaccinated" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Pets</SelectItem>
+                  <SelectItem value="true">Vaccinated</SelectItem>
+                  <SelectItem value="false">Not Vaccinated</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -250,19 +309,18 @@ const Index = () => {
               />
             </div>
             <div className="flex gap-2">
-              <Select value={accessoryFilter} onValueChange={setAccessoryFilter}>
+              <Select value={accessoryCategoryFilter} onValueChange={setAccessoryCategoryFilter}>
                 <SelectTrigger className="w-40 bg-background">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Food">Food</SelectItem>
-                  <SelectItem value="Toys">Toys</SelectItem>
-                  <SelectItem value="Beds">Beds</SelectItem>
-                  <SelectItem value="Collars">Collars</SelectItem>
-                  <SelectItem value="Health">Health</SelectItem>
-                  <SelectItem value="Grooming">Grooming</SelectItem>
+                  {categories.filter(cat => ['Food', 'Toys', 'Beds', 'Collars', 'Health', 'Grooming', 'Travel', 'Training'].includes(cat.name)).map(category => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -284,7 +342,11 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredAccessories.map((accessory) => (
-                <AccessoryCard key={accessory.id} accessory={accessory} />
+                <AccessoryCard 
+                  key={accessory.id} 
+                  accessory={accessory} 
+                  onLoginRequired={() => setIsLoginOpen(true)}
+                />
               ))}
             </div>
           )}
@@ -296,35 +358,11 @@ const Index = () => {
           )}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-primary text-primary-foreground py-12 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="bg-primary-glow p-2 rounded-lg">
-              <Heart className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <h3 className="text-2xl font-bold">PawHeart</h3>
-          </div>
-          <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-            Connecting loving families with pets in need. Every adoption makes a difference.
-          </p>
-          <div className="flex flex-wrap justify-center gap-6 text-sm">
-            <Link to="/about" className="hover:text-primary-glow transition-colors">About Us</Link>
-            <Link to="/adoption-process" className="hover:text-primary-glow transition-colors">Adoption Process</Link>
-            <Link to="/pet-care-tips" className="hover:text-primary-glow transition-colors">Pet Care Tips</Link>
-            <Link to="/contact" className="hover:text-primary-glow transition-colors">Contact</Link>
-            <Link to="/support" className="hover:text-primary-glow transition-colors">Support</Link>
-          </div>
-          <p className="text-primary-foreground/60 text-sm mt-6">
-            © 2024 PawHeart Pet Adoption. Made with ❤️ for our furry friends.
-          </p>
-        </div>
-      </footer>
-
       <CartDrawer>
         <div></div>
       </CartDrawer>
+      
+      <Footer />
       
       <AuthModals
         isLoginOpen={isLoginOpen}

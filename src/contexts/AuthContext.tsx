@@ -18,14 +18,14 @@ interface AuthState {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
-  register: (userData: RegisterData) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (userData: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 interface RegisterData {
-  username: string;
+  username?: string;
   email: string;
   password: string;
   password_confirm: string;
@@ -58,13 +58,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Load user from localStorage on app start
   useEffect(() => {
-    const storedUser = localStorage.getItem('pawheart_user');
+    const storedUser = localStorage.getItem('PetMate_user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
         setAuthState({ user, isLoading: false });
       } catch (error) {
-        localStorage.removeItem('pawheart_user');
+        localStorage.removeItem('PetMate_user');
         setAuthState({ user: null, isLoading: false });
       }
     } else {
@@ -72,36 +72,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const data = await loginApi(username, password);
       // Save tokens
-      localStorage.setItem('pawheart_token', data.access);
-      localStorage.setItem('pawheart_refresh', data.refresh);
-      localStorage.setItem('pawheart_user', JSON.stringify(data.user));
+      localStorage.setItem('PetMate_token', data.access);
+      localStorage.setItem('PetMate_refresh', data.refresh);
+      localStorage.setItem('PetMate_user', JSON.stringify(data.user));
       setAuthState({ user: data.user, isLoading: false });
-      return true;
-    } catch (e) {
-      return false;
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.errors?.non_field_errors?.[0] ||
+                          'Login failed. Please check your credentials.';
+      return { success: false, error: errorMessage };
     }
   };
 
-  const register = async (userData: RegisterData): Promise<boolean> => {
+  const register = async (userData: RegisterData): Promise<{ success: boolean; error?: string }> => {
     try {
       const created = await registerApi(userData);
       // Auto-login after registration using provided username/password
-      const loggedIn = await login(userData.username, userData.password);
-      return !!loggedIn;
-    } catch (e) {
-      return false;
+      const loginResult = await login(userData.username || userData.email, userData.password);
+      return loginResult;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.errors?.username?.[0] ||
+                          error.response?.data?.errors?.email?.[0] ||
+                          error.response?.data?.errors?.password?.[0] ||
+                          'Registration failed. Please try again.';
+      return { success: false, error: errorMessage };
     }
   };
 
   const logout = () => {
     setAuthState({ user: null, isLoading: false });
-    localStorage.removeItem('pawheart_user');
-    localStorage.removeItem('pawheart_token');
-    localStorage.removeItem('pawheart_refresh');
+    localStorage.removeItem('PetMate_user');
+    localStorage.removeItem('PetMate_token');
+    localStorage.removeItem('PetMate_refresh');
+    
+    // Clear cart data on logout
+    window.dispatchEvent(new CustomEvent('userLoggedOut'));
   };
 
   const value: AuthContextType = {
